@@ -1,5 +1,5 @@
 """
-Example usage of InsightFlow API.
+Example usage of Broker Assistant API.
 Demonstrates how to interact with the platform programmatically.
 """
 import requests
@@ -256,7 +256,7 @@ def example_get_accuracy_stats():
 
 if __name__ == '__main__':
     print("=" * 60)
-    print("InsightFlow API Usage Examples")
+    print("Broker Assistant API Usage Examples")
     print("=" * 60)
 
     try:

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**InsightFlow** - A Flask-based web application for stock investment assistance powered by AI. The platform provides buy/sell suggestions based on two pillars:
+**Broker Assistant** - A Flask-based web application for stock investment assistance powered by AI. The platform provides buy/sell suggestions based on two pillars:
 
 1. **Automated Technical Analysis**: Pattern recognition in candlestick charts using ML models
 2. **Quantitative Fundamental Analysis**: News sentiment analysis and fundamental data screening

@@ -1,5 +1,5 @@
 """
-InsightFlow Flask Application Factory.
+Broker Assistant Flask Application Factory.
 """
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy

@@ -2,7 +2,7 @@ services:
   # Flask Application
   app:
     build: .
-    container_name: insightflow-app
+    container_name: brokerassistant-app
     ports:
       - "5000:5000"
     environment:
@@ -10,54 +10,63 @@ services:
     env_file:
       - .env
     depends_on:
-      - db
-      - redis
-      - kafka
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
     volumes:
       - .:/app
     networks:
-      - insightflow-network
+      - brokerassistant-network
+    restart: on-failure
 
   # PostgreSQL Database
   db:
     image: postgres:16-alpine
-    container_name: insightflow-db
+    container_name: brokerassistant-db
     environment:
-      POSTGRES_USER: insightflow
+      POSTGRES_USER: brokerassistant
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: insightflow
+      POSTGRES_DB: brokerassistant
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
-      - insightflow-network
+      - brokerassistant-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brokerassistant"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: insightflow-redis
+    container_name: brokerassistant-redis
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
     networks:
-      - insightflow-network
+      - brokerassistant-network
 
   # Zookeeper (required for Kafka)
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
-    container_name: insightflow-zookeeper
+    container_name: brokerassistant-zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     networks:
-      - insightflow-network
+      - brokerassistant-network
 
   # Kafka
   kafka:
     image: confluentinc/cp-kafka:7.5.0
-    container_name: insightflow-kafka
+    container_name: brokerassistant-kafka
     ports:
       - "9092:9092"
     environment:
@@ -70,12 +79,12 @@ services:
     depends_on:
       - zookeeper
     networks:
-      - insightflow-network
+      - brokerassistant-network
 
 volumes:
   postgres-data:
   redis-data:
 
 networks:
-  insightflow-network:
+  brokerassistant-network:
     driver: bridge

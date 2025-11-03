@@ -1,4 +1,4 @@
-# Cambios Recientes - InsightFlow
+# Cambios Recientes - Broker Assistant
 
 ## Versión 1.0.0 - Inicial
 

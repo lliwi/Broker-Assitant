@@ -1,5 +1,5 @@
 """
-Database models for InsightFlow application.
+Database models for Broker Assistant application.
 """
 from .user import User
 from .portfolio import Position, FavoriteAsset

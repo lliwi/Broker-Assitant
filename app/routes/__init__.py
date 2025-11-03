@@ -1,3 +1,3 @@
 """
-Route blueprints for InsightFlow application.
+Route blueprints for Broker Assistant application.
 """

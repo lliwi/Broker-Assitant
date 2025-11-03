@@ -149,7 +149,7 @@ class KafkaService:
                 bootstrap_servers=bootstrap_servers.split(','),
                 value_deserializer=lambda m: json.loads(m.decode('utf-8')),
                 key_deserializer=lambda k: k.decode('utf-8') if k else None,
-                group_id='insightflow-price-consumers',
+                group_id='brokerassistant-price-consumers',
                 auto_offset_reset='latest',
                 enable_auto_commit=True
             )

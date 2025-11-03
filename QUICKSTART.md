@@ -1,6 +1,6 @@
-# Quick Start Guide - InsightFlow
+# Quick Start Guide - Broker Assistant
 
-Get InsightFlow up and running in 5 minutes!
+Get Broker Assistant up and running in 5 minutes!
 
 ## Prerequisites
 
@@ -78,11 +78,11 @@ Wait for all services to start (~30 seconds).
 docker-compose ps
 
 # Expected output:
-# insightflow-app      running
-# insightflow-db       running
-# insightflow-redis    running
-# insightflow-kafka    running
-# insightflow-zookeeper running
+# brokerassistant-app      running
+# brokerassistant-db       running
+# brokerassistant-redis    running
+# brokerassistant-kafka    running
+# brokerassistant-zookeeper running
 ```
 
 ### Test API
@@ -242,4 +242,4 @@ This starts all services in foreground with live logs.
 
 ---
 
-**Ready to go!** Your InsightFlow instance is now running at `http://localhost:5000`
+**Ready to go!** Your Broker Assistant instance is now running at `http://localhost:5000`

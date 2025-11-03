@@ -1,5 +1,5 @@
 """
-InsightFlow Application Entry Point.
+Broker Assistant Application Entry Point.
 """
 import os
 from app import create_app, socketio

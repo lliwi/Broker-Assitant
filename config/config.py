@@ -1,5 +1,5 @@
 """
-Configuration settings for InsightFlow application.
+Configuration settings for Broker Assistant application.
 """
 import os
 from dotenv import load_dotenv
@@ -14,7 +14,7 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
     # Database
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://insightflow:password@localhost:5432/insightflow')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://brokerassistant:password@localhost:5432/brokerassistant')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     DB_ENCRYPTION_KEY = os.getenv('DB_ENCRYPTION_KEY', '')
 

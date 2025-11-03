@@ -1,3 +1,3 @@
 """
-Test suite for InsightFlow application.
+Test suite for Broker Assistant application.
 """

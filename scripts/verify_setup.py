@@ -1,5 +1,5 @@
 """
-Verify InsightFlow setup and configuration.
+Verify Broker Assistant setup and configuration.
 Checks that all services and dependencies are properly configured.
 """
 import os
@@ -262,7 +262,7 @@ def check_dependencies():
 def run_verification():
     """Run all verification checks."""
     print("=" * 60)
-    print("InsightFlow Setup Verification")
+    print("Broker Assistant Setup Verification")
     print("=" * 60)
 
     checks = [
@@ -300,7 +300,7 @@ def run_verification():
 
     if passed == total:
         print_status(f"All checks passed! ({passed}/{total})", 'success')
-        print_status("InsightFlow is ready to use", 'success')
+        print_status("Broker Assistant is ready to use", 'success')
         print("\nNext steps:")
         print("  - Try the examples: docker-compose exec app python scripts/example_usage.py")
         print("  - Read the API docs: cat README.md")
@@ -308,7 +308,7 @@ def run_verification():
         return 0
     else:
         print_status(f"Some checks failed ({passed}/{total} passed)", 'error')
-        print_status("Please fix the issues above before using InsightFlow", 'error')
+        print_status("Please fix the issues above before using Broker Assistant", 'error')
         return 1
 
 

@@ -21,9 +21,9 @@ def create_sample_users():
     print("Creating sample users...")
 
     users = [
-        User(username='demo', email='demo@insightflow.com', password_hash='hashed_password_1'),
-        User(username='trader1', email='trader1@insightflow.com', password_hash='hashed_password_2'),
-        User(username='investor', email='investor@insightflow.com', password_hash='hashed_password_3'),
+        User(username='demo', email='demo@brokerassistant.com', password_hash='hashed_password_1'),
+        User(username='trader1', email='trader1@brokerassistant.com', password_hash='hashed_password_2'),
+        User(username='investor', email='investor@brokerassistant.com', password_hash='hashed_password_3'),
     ]
 
     for user in users:
@@ -214,7 +214,7 @@ def create_sample_predictions():
 def seed_database():
     """Main function to seed database with sample data."""
     print("=" * 60)
-    print("Seeding InsightFlow Database with Sample Data")
+    print("Seeding Broker Assistant Database with Sample Data")
     print("=" * 60)
 
     app = create_app('development')

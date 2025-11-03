@@ -5,7 +5,6 @@ Implements automated technical analysis with 80%+ accuracy target.
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Optional, Tuple
-import pandas_ta as pta
 from ta import momentum, volatility, trend
 from flask import current_app
 
@@ -144,7 +143,7 @@ class TechnicalAnalysisService:
 
     def _detect_patterns(self, df: pd.DataFrame) -> List[Dict]:
         """
-        Detect chart patterns using pandas-ta pattern recognition.
+        Detect chart patterns using simple price action analysis.
 
         Args:
             df: OHLCV DataFrame
@@ -152,39 +151,8 @@ class TechnicalAnalysisService:
         Returns:
             List of detected patterns with confidence scores
         """
-        patterns = []
-
-        try:
-            # Use pandas-ta's candlestick pattern detection
-            # Add candlestick patterns to the dataframe
-            df_copy = df.copy()
-
-            # Use pandas-ta to detect patterns
-            cdl_patterns = pta.cdl_pattern(
-                open_=df_copy['open'],
-                high=df_copy['high'],
-                low=df_copy['low'],
-                close=df_copy['close'],
-                name='all'
-            )
-
-            if cdl_patterns is not None and not cdl_patterns.empty:
-                # Check each pattern column
-                for col in cdl_patterns.columns:
-                    if cdl_patterns[col].iloc[-1] != 0:
-                        value = cdl_patterns[col].iloc[-1]
-                        patterns.append({
-                            'name': col.replace('CDL_', '').replace('_', ' ').title(),
-                            'type': 'bullish' if value > 0 else 'bearish',
-                            'confidence': min(abs(value) / 100.0, 1.0),  # Normalize to 0-1
-                            'indicator': col
-                        })
-
-        except Exception as e:
-            current_app.logger.error(f"Pattern detection error: {str(e)}")
-            # Fallback to simple pattern detection based on price action
-            patterns = self._simple_pattern_detection(df)
-
+        # Use simple pattern detection based on price action
+        patterns = self._simple_pattern_detection(df)
         return patterns
 
     def _simple_pattern_detection(self, df: pd.DataFrame) -> List[Dict]:
