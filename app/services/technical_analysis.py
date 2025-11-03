@@ -5,7 +5,8 @@ Implements automated technical analysis with 80%+ accuracy target.
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Optional, Tuple
-import talib
+import pandas_ta as pta
+from ta import momentum, volatility, trend
 from flask import current_app
 
 from app.utils.cache import cache_get, cache_set, get_analysis_cache_key
@@ -55,7 +56,7 @@ class TechnicalAnalysisService:
 
     def _calculate_indicators(self, df: pd.DataFrame) -> Dict:
         """
-        Calculate technical indicators.
+        Calculate technical indicators using pandas-ta and ta libraries.
 
         Args:
             df: OHLCV DataFrame
@@ -63,28 +64,24 @@ class TechnicalAnalysisService:
         Returns:
             Dictionary with indicator values
         """
-        close = df['close'].values
-        high = df['high'].values
-        low = df['low'].values
-
         indicators = {}
 
         # Bollinger Bands
         try:
             period = current_app.config.get('BOLLINGER_PERIOD', 20)
-            upper, middle, lower = talib.BBANDS(
-                close,
-                timeperiod=period,
-                nbdevup=2,
-                nbdevdn=2,
-                matype=0
-            )
+            bb = volatility.BollingerBands(close=df['close'], window=period, window_dev=2)
+
+            upper = bb.bollinger_hband().iloc[-1]
+            middle = bb.bollinger_mavg().iloc[-1]
+            lower = bb.bollinger_lband().iloc[-1]
+            current_price = df['close'].iloc[-1]
+
             indicators['bollinger_bands'] = {
-                'upper': float(upper[-1]) if not np.isnan(upper[-1]) else None,
-                'middle': float(middle[-1]) if not np.isnan(middle[-1]) else None,
-                'lower': float(lower[-1]) if not np.isnan(lower[-1]) else None,
-                'current_price': float(close[-1]),
-                'signal': self._interpret_bollinger(close[-1], upper[-1], lower[-1])
+                'upper': float(upper) if not np.isnan(upper) else None,
+                'middle': float(middle) if not np.isnan(middle) else None,
+                'lower': float(lower) if not np.isnan(lower) else None,
+                'current_price': float(current_price),
+                'signal': self._interpret_bollinger(current_price, upper, lower)
             }
         except Exception as e:
             current_app.logger.error(f"Bollinger Bands calculation error: {str(e)}")
@@ -93,10 +90,12 @@ class TechnicalAnalysisService:
         # RSI (Relative Strength Index)
         try:
             rsi_period = current_app.config.get('RSI_PERIOD', 14)
-            rsi = talib.RSI(close, timeperiod=rsi_period)
+            rsi_indicator = momentum.RSIIndicator(close=df['close'], window=rsi_period)
+            rsi_value = rsi_indicator.rsi().iloc[-1]
+
             indicators['rsi'] = {
-                'value': float(rsi[-1]) if not np.isnan(rsi[-1]) else None,
-                'signal': self._interpret_rsi(rsi[-1])
+                'value': float(rsi_value) if not np.isnan(rsi_value) else None,
+                'signal': self._interpret_rsi(rsi_value)
             }
         except Exception as e:
             current_app.logger.error(f"RSI calculation error: {str(e)}")
@@ -105,18 +104,20 @@ class TechnicalAnalysisService:
         # Stochastic Oscillator
         try:
             stoch_period = current_app.config.get('STOCHASTIC_PERIOD', 14)
-            slowk, slowd = talib.STOCH(
-                high, low, close,
-                fastk_period=stoch_period,
-                slowk_period=3,
-                slowk_matype=0,
-                slowd_period=3,
-                slowd_matype=0
+            stoch = momentum.StochasticOscillator(
+                high=df['high'],
+                low=df['low'],
+                close=df['close'],
+                window=stoch_period,
+                smooth_window=3
             )
+            slowk = stoch.stoch().iloc[-1]
+            slowd = stoch.stoch_signal().iloc[-1]
+
             indicators['stochastic'] = {
-                'k': float(slowk[-1]) if not np.isnan(slowk[-1]) else None,
-                'd': float(slowd[-1]) if not np.isnan(slowd[-1]) else None,
-                'signal': self._interpret_stochastic(slowk[-1], slowd[-1])
+                'k': float(slowk) if not np.isnan(slowk) else None,
+                'd': float(slowd) if not np.isnan(slowd) else None,
+                'signal': self._interpret_stochastic(slowk, slowd)
             }
         except Exception as e:
             current_app.logger.error(f"Stochastic calculation error: {str(e)}")
@@ -124,12 +125,16 @@ class TechnicalAnalysisService:
 
         # MACD
         try:
-            macd, signal, hist = talib.MACD(close, fastperiod=12, slowperiod=26, signalperiod=9)
+            macd_indicator = trend.MACD(close=df['close'], window_slow=26, window_fast=12, window_sign=9)
+            macd_value = macd_indicator.macd().iloc[-1]
+            signal_value = macd_indicator.macd_signal().iloc[-1]
+            hist_value = macd_indicator.macd_diff().iloc[-1]
+
             indicators['macd'] = {
-                'macd': float(macd[-1]) if not np.isnan(macd[-1]) else None,
-                'signal': float(signal[-1]) if not np.isnan(signal[-1]) else None,
-                'histogram': float(hist[-1]) if not np.isnan(hist[-1]) else None,
-                'trend': self._interpret_macd(macd[-1], signal[-1])
+                'macd': float(macd_value) if not np.isnan(macd_value) else None,
+                'signal': float(signal_value) if not np.isnan(signal_value) else None,
+                'histogram': float(hist_value) if not np.isnan(hist_value) else None,
+                'trend': self._interpret_macd(macd_value, signal_value)
             }
         except Exception as e:
             current_app.logger.error(f"MACD calculation error: {str(e)}")
@@ -139,7 +144,7 @@ class TechnicalAnalysisService:
 
     def _detect_patterns(self, df: pd.DataFrame) -> List[Dict]:
         """
-        Detect chart patterns using TA-Lib pattern recognition.
+        Detect chart patterns using pandas-ta pattern recognition.
 
         Args:
             df: OHLCV DataFrame
@@ -148,40 +153,88 @@ class TechnicalAnalysisService:
             List of detected patterns with confidence scores
         """
         patterns = []
-        open_prices = df['open'].values
-        high = df['high'].values
-        low = df['low'].values
-        close = df['close'].values
 
-        # Pattern recognition functions from TA-Lib
-        pattern_functions = {
-            'CDLENGULFING': 'Engulfing Pattern',
-            'CDLHAMMER': 'Hammer',
-            'CDLSHOOTINGSTAR': 'Shooting Star',
-            'CDLDOJI': 'Doji',
-            'CDLMORNINGSTAR': 'Morning Star',
-            'CDLEVENINGSTAR': 'Evening Star',
-            'CDL3WHITESOLDIERS': 'Three White Soldiers',
-            'CDL3BLACKCROWS': 'Three Black Crows',
-            'CDLHARAMI': 'Harami Pattern',
-            'CDLPIERCING': 'Piercing Pattern',
-            'CDLDRAGONFLYDOJI': 'Dragonfly Doji'
-        }
+        try:
+            # Use pandas-ta's candlestick pattern detection
+            # Add candlestick patterns to the dataframe
+            df_copy = df.copy()
 
-        for func_name, pattern_name in pattern_functions.items():
-            try:
-                func = getattr(talib, func_name)
-                result = func(open_prices, high, low, close)
+            # Use pandas-ta to detect patterns
+            cdl_patterns = pta.cdl_pattern(
+                open_=df_copy['open'],
+                high=df_copy['high'],
+                low=df_copy['low'],
+                close=df_copy['close'],
+                name='all'
+            )
 
-                if result[-1] != 0:  # Pattern detected
-                    patterns.append({
-                        'name': pattern_name,
-                        'type': 'bullish' if result[-1] > 0 else 'bearish',
-                        'confidence': abs(result[-1]) / 100.0,  # Normalize to 0-1
-                        'indicator': func_name
-                    })
-            except Exception as e:
-                current_app.logger.error(f"Pattern detection error for {func_name}: {str(e)}")
+            if cdl_patterns is not None and not cdl_patterns.empty:
+                # Check each pattern column
+                for col in cdl_patterns.columns:
+                    if cdl_patterns[col].iloc[-1] != 0:
+                        value = cdl_patterns[col].iloc[-1]
+                        patterns.append({
+                            'name': col.replace('CDL_', '').replace('_', ' ').title(),
+                            'type': 'bullish' if value > 0 else 'bearish',
+                            'confidence': min(abs(value) / 100.0, 1.0),  # Normalize to 0-1
+                            'indicator': col
+                        })
+
+        except Exception as e:
+            current_app.logger.error(f"Pattern detection error: {str(e)}")
+            # Fallback to simple pattern detection based on price action
+            patterns = self._simple_pattern_detection(df)
+
+        return patterns
+
+    def _simple_pattern_detection(self, df: pd.DataFrame) -> List[Dict]:
+        """
+        Simple pattern detection fallback based on price action.
+
+        Args:
+            df: OHLCV DataFrame
+
+        Returns:
+            List of simple patterns
+        """
+        patterns = []
+
+        try:
+            # Check for Doji (open ~= close)
+            last_candle = df.iloc[-1]
+            body_size = abs(last_candle['close'] - last_candle['open'])
+            candle_range = last_candle['high'] - last_candle['low']
+
+            if candle_range > 0 and body_size / candle_range < 0.1:
+                patterns.append({
+                    'name': 'Doji',
+                    'type': 'neutral',
+                    'confidence': 0.7,
+                    'indicator': 'simple_doji'
+                })
+
+            # Check for Hammer (long lower shadow, small body at top)
+            lower_shadow = last_candle['open'] - last_candle['low'] if last_candle['close'] > last_candle['open'] else last_candle['close'] - last_candle['low']
+            if candle_range > 0 and lower_shadow / candle_range > 0.6:
+                patterns.append({
+                    'name': 'Hammer',
+                    'type': 'bullish',
+                    'confidence': 0.65,
+                    'indicator': 'simple_hammer'
+                })
+
+            # Check for Shooting Star (long upper shadow, small body at bottom)
+            upper_shadow = last_candle['high'] - last_candle['close'] if last_candle['close'] > last_candle['open'] else last_candle['high'] - last_candle['open']
+            if candle_range > 0 and upper_shadow / candle_range > 0.6:
+                patterns.append({
+                    'name': 'Shooting Star',
+                    'type': 'bearish',
+                    'confidence': 0.65,
+                    'indicator': 'simple_shooting_star'
+                })
+
+        except Exception as e:
+            current_app.logger.error(f"Simple pattern detection error: {str(e)}")
 
         return patterns
 

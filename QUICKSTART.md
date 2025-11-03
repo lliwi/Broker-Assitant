@@ -5,7 +5,7 @@ Get InsightFlow up and running in 5 minutes!
 ## Prerequisites
 
 - Docker and Docker Compose installed
-- API keys for AI and financial data services
+- API keys for AI and financial data services (see detailed list below)
 
 ## Installation Steps
 
@@ -22,16 +22,40 @@ Edit `.env` and add your API keys:
 
 ```bash
 # Required for AI analysis
-ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_API_KEY=sk-ant-...  # Get at: https://console.anthropic.com/
 
 # Required for financial data
-ALPHA_VANTAGE_API_KEY=your-key
-FINNHUB_API_KEY=your-key
-NEWS_API_KEY=your-key
+ALPHA_VANTAGE_API_KEY=your-key  # Get at: https://www.alphavantage.co/support/#api-key
+FINNHUB_API_KEY=your-key        # Get at: https://finnhub.io/register
+NEWS_API_KEY=your-key           # Get at: https://newsapi.org/register
+
+# Optional (alternative AI providers)
+OPENAI_API_KEY=your-key         # Get at: https://platform.openai.com/api-keys
+DEEPSEEK_API_KEY=your-key       # Get at: https://platform.deepseek.com/
 
 # Generate encryption key
 DB_ENCRYPTION_KEY=$(python scripts/generate_encryption_key.py)
 ```
+
+#### Where to Get API Keys:
+
+1. **Anthropic Claude** (Required for AI predictions):
+   - Sign up at: [https://console.anthropic.com/](https://console.anthropic.com/)
+   - Free tier available, pay-as-you-go pricing
+
+2. **Alpha Vantage** (Required for stock data):
+   - Get free API key: [https://www.alphavantage.co/support/#api-key](https://www.alphavantage.co/support/#api-key)
+   - Free tier: 500 requests/day
+
+3. **Finnhub** (Required for news and fundamentals):
+   - Register: [https://finnhub.io/register](https://finnhub.io/register)
+   - Free tier: 60 API calls/minute
+
+4. **NewsAPI** (Required for news aggregation):
+   - Register: [https://newsapi.org/register](https://newsapi.org/register)
+   - Free tier: 100 requests/day
+
+**Note**: Technical analysis works without API keys! Only news/AI features require them.
 
 ### 3. Start Application
 
