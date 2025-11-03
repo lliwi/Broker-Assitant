@@ -1,0 +1,58 @@
+# Flask and Web Framework
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+Flask-CORS==4.0.0
+Flask-SocketIO==5.3.6
+
+# Database
+psycopg2-binary==2.9.9
+SQLAlchemy==2.0.23
+
+# Redis Cache
+redis==5.0.1
+hiredis==2.2.3
+
+# Kafka
+kafka-python==2.0.2
+
+# WebSocket
+python-socketio==5.11.0
+python-engineio==4.8.0
+
+# AI/ML Models
+anthropic==0.18.1
+openai==1.12.0
+
+# Technical Analysis
+pandas==2.1.4
+numpy==1.26.3
+ta-lib==0.4.28
+scikit-learn==1.4.0
+tensorflow==2.15.0
+
+# Time Series Analysis
+statsmodels==0.14.1
+
+# Data Visualization
+matplotlib==3.8.2
+plotly==5.18.0
+
+# News APIs and Web Scraping
+requests==2.31.0
+beautifulsoup4==4.12.3
+feedparser==6.0.11
+
+# Security
+cryptography==42.0.2
+python-dotenv==1.0.0
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2024.1
+
+# Development
+pytest==7.4.3
+pytest-cov==4.1.0
+black==23.12.1
+flake8==7.0.0
