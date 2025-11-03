@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broker Assistant - Dashboard</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://code.highcharts.com/stock/highstock.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/stock/indicators/indicators-all.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/drag-panes.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f1419;
+            color: #e6edf3;
+        }
+
+        .header {
+            background: #161b22;
+            padding: 15px 30px;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #58a6ff;
+        }
+
+        .header .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #3fb950;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            gap: 20px;
+            padding: 20px;
+            height: calc(100vh - 70px);
+        }
+
+        .panel {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .panel h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #58a6ff;
+            border-bottom: 2px solid #30363d;
+            padding-bottom: 10px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #e6edf3;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #238636;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #2ea043;
+        }
+
+        .btn-secondary {
+            background: #1f6feb;
+        }
+
+        .btn-secondary:hover {
+            background: #388bfd;
+        }
+
+        .btn-danger {
+            background: #da3633;
+        }
+
+        .btn-danger:hover {
+            background: #ff4444;
+        }
+
+        .watchlist {
+            margin-top: 20px;
+        }
+
+        .watchlist-item {
+            background: #0d1117;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .watchlist-item:hover {
+            background: #1c2128;
+            border-left: 3px solid #58a6ff;
+        }
+
+        .watchlist-item.active {
+            background: #1c2128;
+            border-left: 3px solid #58a6ff;
+        }
+
+        .chart-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        #main-chart {
+            height: 500px;
+        }
+
+        .indicators-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .indicator-card {
+            background: #0d1117;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+        }
+
+        .indicator-card h3 {
+            font-size: 12px;
+            color: #8b949e;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .indicator-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .indicator-signal {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .signal-buy {
+            background: rgba(63, 185, 80, 0.2);
+            color: #3fb950;
+        }
+
+        .signal-sell {
+            background: rgba(218, 54, 51, 0.2);
+            color: #f85149;
+        }
+
+        .signal-neutral {
+            background: rgba(139, 148, 158, 0.2);
+            color: #8b949e;
+        }
+
+        .suggestions-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .suggestion-card {
+            background: #0d1117;
+            border: 2px solid #30363d;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .suggestion-card.buy {
+            border-color: #3fb950;
+        }
+
+        .suggestion-card.sell {
+            border-color: #f85149;
+        }
+
+        .suggestion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .suggestion-type {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .suggestion-type.buy {
+            color: #3fb950;
+        }
+
+        .suggestion-type.sell {
+            color: #f85149;
+        }
+
+        .confidence {
+            background: #1c2128;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .factors {
+            margin-top: 15px;
+        }
+
+        .factor-item {
+            background: #1c2128;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            display: flex;
+            align-items: start;
+            gap: 8px;
+        }
+
+        .factor-icon {
+            color: #58a6ff;
+            margin-top: 2px;
+        }
+
+        .news-section {
+            margin-top: 20px;
+        }
+
+        .news-item {
+            background: #0d1117;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-left: 3px solid #30363d;
+        }
+
+        .news-item.positive {
+            border-left-color: #3fb950;
+        }
+
+        .news-item.negative {
+            border-left-color: #f85149;
+        }
+
+        .news-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .news-sentiment {
+            font-size: 11px;
+            color: #8b949e;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8b949e;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #30363d;
+            border-top-color: #58a6ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .portfolio-summary {
+            background: linear-gradient(135deg, #1f6feb 0%, #58a6ff 100%);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .portfolio-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .portfolio-change {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: #8b949e;
+            cursor: pointer;
+            font-size: 14px;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            color: #58a6ff;
+            border-bottom-color: #58a6ff;
+        }
+
+        .tab:hover {
+            color: #e6edf3;
+        }
+
+        .position-item {
+            background: #0d1117;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .position-symbol {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .position-pnl {
+            font-weight: 600;
+        }
+
+        .position-pnl.positive {
+            color: #3fb950;
+        }
+
+        .position-pnl.negative {
+            color: #f85149;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-chart-line"></i> Broker Assistant</h1>
+        <div class="status">
+            <span class="status-indicator"></span>
+            <span>Conectado</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Left Panel: Search & Watchlist -->
+        <div class="panel">
+            <h2><i class="fas fa-search"></i> Buscar Símbolo</h2>
+            <input type="text" id="symbol-search" class="search-box" placeholder="Ej: AAPL, TSLA, MSFT..." value="AAPL">
+            <button class="btn btn-secondary" onclick="analyzeSymbol()">
+                <i class="fas fa-chart-bar"></i> Analizar
+            </button>
+
+            <div class="watchlist">
+                <h2><i class="fas fa-star"></i> Watchlist</h2>
+                <div id="watchlist-container">
+                    <div class="watchlist-item active" onclick="selectSymbol('AAPL')">
+                        <span>AAPL</span>
+                        <span style="color: #3fb950;">+2.5%</span>
+                    </div>
+                    <div class="watchlist-item" onclick="selectSymbol('TSLA')">
+                        <span>TSLA</span>
+                        <span style="color: #f85149;">-1.2%</span>
+                    </div>
+                    <div class="watchlist-item" onclick="selectSymbol('MSFT')">
+                        <span>MSFT</span>
+                        <span style="color: #3fb950;">+0.8%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <h2><i class="fas fa-wallet"></i> Portfolio</h2>
+                <div class="portfolio-summary">
+                    <div class="portfolio-value" id="portfolio-value">$0.00</div>
+                    <div class="portfolio-change" id="portfolio-change">Sin posiciones abiertas</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel: Chart & Indicators -->
+        <div class="panel chart-container">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('chart')">Gráfico</button>
+                <button class="tab" onclick="switchTab('indicators')">Indicadores</button>
+                <button class="tab" onclick="switchTab('news')">Noticias</button>
+            </div>
+
+            <div id="chart-tab">
+                <div id="main-chart"></div>
+
+                <div class="indicators-grid" style="margin-top: 20px;">
+                    <div class="indicator-card">
+                        <h3>RSI (14)</h3>
+                        <div class="indicator-value" id="rsi-value">--</div>
+                        <span class="indicator-signal signal-neutral" id="rsi-signal">Neutral</span>
+                    </div>
+                    <div class="indicator-card">
+                        <h3>MACD</h3>
+                        <div class="indicator-value" id="macd-value">--</div>
+                        <span class="indicator-signal signal-neutral" id="macd-signal">Neutral</span>
+                    </div>
+                    <div class="indicator-card">
+                        <h3>Bollinger Bands</h3>
+                        <div class="indicator-value" id="bb-value">--</div>
+                        <span class="indicator-signal signal-neutral" id="bb-signal">Neutral</span>
+                    </div>
+                    <div class="indicator-card">
+                        <h3>Stochastic</h3>
+                        <div class="indicator-value" id="stoch-value">--</div>
+                        <span class="indicator-signal signal-neutral" id="stoch-signal">Neutral</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="indicators-tab" style="display: none;">
+                <div id="indicators-detail"></div>
+            </div>
+
+            <div id="news-tab" style="display: none;">
+                <div id="news-container"></div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Suggestions -->
+        <div class="panel suggestions-panel">
+            <h2><i class="fas fa-lightbulb"></i> Sugerencias IA</h2>
+            <div id="suggestions-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 15px;">Selecciona un símbolo para obtener sugerencias...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

@@ -17,5 +17,6 @@ if __name__ == '__main__':
         app,
         host='0.0.0.0',
         port=5000,
-        debug=app.config['DEBUG']
+        debug=app.config['DEBUG'],
+        allow_unsafe_werkzeug=True  # Allow Werkzeug for development
     )

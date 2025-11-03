@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test - Broker Assistant</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            padding: 5px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .log-entry.info { color: #0c5460; }
+        .log-entry.success { color: #155724; }
+        .log-entry.error { color: #721c24; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 WebSocket Test - Broker Assistant</h1>
+
+    <div id="status" class="status disconnected">
+        <strong>Status:</strong> Disconnected
+    </div>
+
+    <div>
+        <input type="text" id="symbol" placeholder="Symbol (e.g., AAPL)" value="AAPL">
+        <button onclick="subscribeSymbol()">Subscribe to Symbol</button>
+        <button onclick="unsubscribeSymbol()">Unsubscribe</button>
+        <button onclick="subscribePortfolio()">Subscribe to Portfolio</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <h3>Event Log:</h3>
+    <div id="log" class="log"></div>
+
+    <script>
+        let socket;
+        const logDiv = document.getElementById('log');
+        const statusDiv = document.getElementById('status');
+
+        function addLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            if (connected) {
+                statusDiv.className = 'status connected';
+                statusDiv.innerHTML = '<strong>Status:</strong> Connected ✓';
+            } else {
+                statusDiv.className = 'status disconnected';
+                statusDiv.innerHTML = '<strong>Status:</strong> Disconnected ✗';
+            }
+        }
+
+        function clearLog() {
+            logDiv.innerHTML = '';
+        }
+
+        function subscribeSymbol() {
+            const symbol = document.getElementById('symbol').value;
+            if (symbol) {
+                socket.emit('subscribe_symbol', { symbol: symbol.toUpperCase() });
+                addLog(`Subscribing to ${symbol.toUpperCase()}...`, 'info');
+            }
+        }
+
+        function unsubscribeSymbol() {
+            const symbol = document.getElementById('symbol').value;
+            if (symbol) {
+                socket.emit('unsubscribe_symbol', { symbol: symbol.toUpperCase() });
+                addLog(`Unsubscribing from ${symbol.toUpperCase()}...`, 'info');
+            }
+        }
+
+        function subscribePortfolio() {
+            socket.emit('subscribe_portfolio', { user_id: 1 });
+            addLog('Subscribing to portfolio updates for user_id=1...', 'info');
+        }
+
+        // Initialize WebSocket connection
+        addLog('Initializing WebSocket connection...', 'info');
+        socket = io('http://localhost:5000', {
+            transports: ['websocket', 'polling']
+        });
+
+        socket.on('connect', () => {
+            addLog('WebSocket connected successfully!', 'success');
+            updateStatus(true);
+        });
+
+        socket.on('disconnect', () => {
+            addLog('WebSocket disconnected', 'error');
+            updateStatus(false);
+        });
+
+        socket.on('connect_error', (error) => {
+            addLog(`Connection error: ${error.message}`, 'error');
+        });
+
+        socket.on('error', (error) => {
+            addLog(`Error: ${error}`, 'error');
+        });
+
+        socket.on('subscribed', (data) => {
+            addLog(`✓ Subscribed: ${JSON.stringify(data)}`, 'success');
+        });
+
+        socket.on('unsubscribed', (data) => {
+            addLog(`✓ Unsubscribed: ${JSON.stringify(data)}`, 'success');
+        });
+
+        socket.on('price_update', (data) => {
+            addLog(`💰 Price Update: ${JSON.stringify(data)}`, 'success');
+        });
+
+        socket.on('portfolio_update', (data) => {
+            addLog(`📊 Portfolio Update: ${JSON.stringify(data)}`, 'success');
+        });
+
+        // Auto-subscribe to AAPL on load
+        socket.on('connect', () => {
+            setTimeout(() => {
+                subscribeSymbol();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

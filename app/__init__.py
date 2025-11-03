@@ -46,7 +46,8 @@ def create_app(config_name='default'):
     )
 
     # Register blueprints
-    from app.routes import portfolio, analysis, websocket
+    from app.routes import main, portfolio, analysis, websocket
+    app.register_blueprint(main.bp)
     app.register_blueprint(portfolio.bp)
     app.register_blueprint(analysis.bp)
 
